@@ -1,0 +1,34 @@
+# Web framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# Auth
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.2.1
+pyotp==2.9.0
+qrcode[pil]==8.0
+
+# Database
+sqlalchemy==2.0.36
+aiosqlite==0.20.0
+alembic==1.14.0
+
+# Docker
+docker==7.1.0
+
+# Mail
+aiosmtplib==3.0.2
+
+# HTTP client (Discord API)
+httpx==0.28.1
+
+# Utilities
+python-dotenv==1.0.1
+python-multipart==0.0.18
+pydantic[email]==2.10.3
+pydantic-settings==2.7.0
+websockets==14.1
+
+# Windows Docker support (named pipe)
+pywin32==308; sys_platform == "win32"

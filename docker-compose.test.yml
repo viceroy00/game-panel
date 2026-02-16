@@ -1,0 +1,44 @@
+## ===========================================
+## Game Panel — 테스트 환경 (포트 8091)
+## ===========================================
+## 사용법:
+##   docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --build
+##
+## 기존 운영 환경(8090)과 완전 독립 — DB/볼륨/네트워크 전부 분리
+## 마이그레이션 테스트 후 문제 없으면 운영에 적용
+## ===========================================
+
+services:
+  nginx:
+    container_name: game-panel-nginx-test
+    ports:
+      - "8091:8090"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - frontend-dist-test:/usr/share/nginx/html:ro
+    networks:
+      - panel-net-test
+
+  backend:
+    container_name: game-panel-backend-test
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - panel-data-test:/app/data
+    networks:
+      - panel-net-test
+      - game-net
+
+  frontend-build:
+    container_name: game-panel-frontend-build-test
+    volumes:
+      - frontend-dist-test:/output
+
+volumes:
+  panel-data-test:
+    name: game-panel-data-test
+  frontend-dist-test:
+    name: game-panel-frontend-test
+
+networks:
+  panel-net-test:
+    name: game-panel-internal-test

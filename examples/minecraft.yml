@@ -1,0 +1,64 @@
+# 게임 서버 예시: Minecraft
+# game-panel이 관리하려면 반드시 label을 붙여야 합니다
+#
+# 사용법:
+#   docker compose -f examples/minecraft.yml up -d
+
+services:
+  minecraft-survival:
+    image: itzg/minecraft-server:java21
+    container_name: minecraft-survival
+    labels:
+      - "game-panel.managed=true"            # ← 필수: 패널에서 인식
+      - "game-panel.game=Minecraft"
+      - "game-panel.description=서바이벌 서버"
+    environment:
+      EULA: "TRUE"
+      DISABLE_GUI: "true"
+      TYPE: "PAPER"
+      VERSION: "1.21.4"
+      MEMORY: "4G"
+      DIFFICULTY: "normal"
+      MAX_PLAYERS: 20
+      MOTD: "남건 게임서버"
+      ENABLE_RCON: "true"
+      RCON_PASSWORD: "CHANGE_ME_RCON_PASS"
+    ports:
+      - "25565:25565"       # 게임 클라이언트 접속 포트
+      - "25575:25575"       # RCON 포트
+    volumes:
+      - minecraft-data:/data
+    networks:
+      - game-servers
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+          cpus: "4.0"
+
+  # valheim-server:
+  #   image: lloesche/valheim-server
+  #   container_name: valheim-server
+  #   labels:
+  #     - "game-panel.managed=true"
+  #     - "game-panel.game=Valheim"
+  #   environment:
+  #     SERVER_NAME: "Namgun Valheim"
+  #     WORLD_NAME: "NamgunWorld"
+  #     SERVER_PASS: "CHANGE_ME"
+  #   ports:
+  #     - "2456-2458:2456-2458/udp"
+  #   volumes:
+  #     - valheim-data:/config
+  #   networks:
+  #     - game-servers
+  #   restart: unless-stopped
+
+volumes:
+  minecraft-data:
+  # valheim-data:
+
+networks:
+  game-servers:
+    external: true

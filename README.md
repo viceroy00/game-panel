@@ -266,6 +266,15 @@ docker compose up -d --build
 
 ## 변경 이력
 
+### v0.5.3 — 버그 수정
+
+- 대시보드 메모리 사용량 표시 수정 (커널 캐시 제외, Docker Desktop과 동일하게)
+
+### v0.5.2 — 캐시 개선
+
+- Nginx에서 index.html no-cache 처리 (배포 후 브라우저 캐시 문제 해결)
+- JS/CSS는 Vite 해시 파일명 + 7일 immutable 캐시 유지
+
 ### v0.5.1 — 버그 수정
 
 - Vuetify3 v-file-input 호환 수정 (양식/설정 파일 업로드 실패 버그)

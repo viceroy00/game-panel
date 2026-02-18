@@ -90,6 +90,10 @@ def get_container_stats(name: str) -> dict:
                 info["cpu_percent"] = round((cpu_delta / system_delta) * cpu_count * 100, 2)
 
             mem_usage = stats["memory_stats"].get("usage", 0)
+            # 캐시 제외 — docker stats / Docker Desktop과 동일한 계산
+            cache = stats["memory_stats"].get("stats", {}).get("inactive_file", 0) \
+                or stats["memory_stats"].get("stats", {}).get("cache", 0)
+            mem_usage -= cache
             mem_limit = stats["memory_stats"].get("limit", 0)
             info["memory_usage"] = f"{mem_usage / 1024 / 1024:.1f}MB"
             info["memory_limit"] = f"{mem_limit / 1024 / 1024:.1f}MB"

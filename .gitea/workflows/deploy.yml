@@ -1,0 +1,35 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Pull latest code
+        run: |
+          cd /mnt/d/Docker/game-panel
+          git fetch origin main
+          git reset --hard origin/main
+
+      - name: Build and deploy
+        run: |
+          cd /mnt/d/Docker/game-panel
+          docker compose up -d --build
+
+      - name: Health check
+        run: |
+          echo "Waiting for services to start..."
+          for i in $(seq 1 10); do
+            if curl -sf --max-time 5 http://localhost:8090/api/health; then
+              echo ""
+              echo "Deploy successful (attempt $i)"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 5s..."
+            sleep 5
+          done
+          echo "Health check failed after 10 attempts"
+          exit 1

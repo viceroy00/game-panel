@@ -43,8 +43,15 @@
           <v-alert v-if="error" type="error" variant="tonal" class="mx-4 mb-4">{{ error }}</v-alert>
         </v-card>
 
+        <!-- ═══ 면책 고지 ═══ -->
+        <p v-if="step === 'login'" class="text-caption text-center mt-4" style="color:#6E7681; max-width:420px; margin:0 auto; line-height:1.6;">
+          본 서비스는 무료로 제공되며, 서버 가용성·데이터 보존·성능에 대한
+          어떠한 품질 보장(SLA)도 하지 않습니다.
+          예고 없이 중단·초기화될 수 있으며, 이로 인한 손해에 대해 운영자는 책임지지 않습니다.
+        </p>
+
         <!-- ═══ 초대 코드 가입 ═══ -->
-        <v-card v-else-if="step === 'invite'" class="pa-6" style="border: 1px solid rgba(88,166,255,0.15);">
+        <v-card v-if="step === 'invite'" class="pa-6" style="border: 1px solid rgba(88,166,255,0.15);">
           <v-card-title class="text-center">🎟️ 초대 코드 가입</v-card-title>
           <v-card-text>
             <v-text-field v-model="inviteCode" label="초대 코드" prepend-icon="mdi-ticket"

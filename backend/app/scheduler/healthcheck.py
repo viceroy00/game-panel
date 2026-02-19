@@ -25,9 +25,13 @@ from app.discord.notify import (
 
 settings = get_settings()
 
+_startup_time: datetime = None
+
 
 async def run_healthcheck():
     """메인 헬스체크 루프"""
+    global _startup_time
+    _startup_time = datetime.utcnow()
     print(f"[HEALTHCHECK] 스케줄러 시작 (간격: {settings.healthcheck_interval_minutes}분)")
 
     while True:
@@ -142,18 +146,29 @@ async def _check_all_containers():
 
 MAX_AUTO_RESTART = 3
 MIN_UPTIME_SECONDS = 600  # 10분
+PANEL_WARMUP_SECONDS = 600  # 패널 기동 후 10분간 포트 체크 스킵
 
 
 async def _port_healthcheck(name: str, c: dict, state: ContainerState):
     """running 컨테이너의 포트 응답 체크 → 무응답 시 자동 재시작"""
+    # 패널 기동 후 웜업 기간에는 포트 체크 스킵
+    if _startup_time:
+        elapsed = (datetime.utcnow() - _startup_time).total_seconds()
+        if elapsed < PANEL_WARMUP_SECONDS:
+            return
+
     labels = c.get("labels", {})
     port_label = labels.get("game-panel.port")
     if not port_label:
         return  # 포트 라벨 없으면 스킵
 
-    protocol = labels.get("game-panel.port-protocol", "tcp").lower()
+    protocol_label = labels.get("game-panel.port-protocol")
+    if not protocol_label:
+        return  # 프로토콜 라벨 없으면 스킵 (안전 기본값)
+
+    protocol = protocol_label.lower()
     if protocol not in ("tcp", "udp"):
-        protocol = "tcp"
+        return
 
     try:
         port = int(port_label)
@@ -167,18 +182,25 @@ async def _port_healthcheck(name: str, c: dict, state: ContainerState):
     if uptime is None or uptime < MIN_UPTIME_SECONDS:
         return
 
-    # 포트 체크
-    port_ok = check_container_port(name, port, protocol=protocol)
+    # 포트 체크 — 2분 간격 × 3회 리트라이
+    RETRY_COUNT = 3
+    RETRY_INTERVAL = 120  # 2분
 
-    if port_ok:
-        # 정상 → 재시작 카운터 리셋
-        if state.auto_restart_count > 0:
-            state.auto_restart_count = 0
-            print(f"[HEALTHCHECK] {name} 포트 {port}/{protocol} 정상 — 재시작 카운터 리셋")
-        return
+    fail_count = 0
+    for attempt in range(RETRY_COUNT):
+        port_ok = check_container_port(name, port, protocol=protocol)
+        if port_ok:
+            if state.auto_restart_count > 0:
+                state.auto_restart_count = 0
+                print(f"[HEALTHCHECK] {name} 포트 {port}/{protocol} 정상 — 재시작 카운터 리셋")
+            return
+        fail_count += 1
+        print(f"[HEALTHCHECK] {name} 포트 {port}/{protocol} 무응답 ({attempt + 1}/{RETRY_COUNT})")
+        if attempt < RETRY_COUNT - 1:
+            await asyncio.sleep(RETRY_INTERVAL)
 
-    # 포트 무응답
-    print(f"[HEALTHCHECK] {name} 포트 {port}/{protocol} 무응답 (업타임 {uptime:.0f}초)")
+    # 3회 연속 실패 → 자동 재시작 판단
+    print(f"[HEALTHCHECK] {name} 포트 {port}/{protocol} {RETRY_COUNT}회 연속 무응답 (업타임 {uptime:.0f}초)")
 
     # 무한 재시작 방지
     if state.auto_restart_count >= MAX_AUTO_RESTART:
